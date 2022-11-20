@@ -68,8 +68,8 @@ void printLCDHeader(int httpsCode){
   lcd.clear();
   lcd.print("BTC-USD:");
   lcd.setCursor(13, 0);
-  lcd.write(WiFi.status() == WL_CONNECTED); //TODO: Make Symbols
-  lcd.write(client.connected() + 2);
+  lcd.write(WiFi.status() == WL_CONNECTED); 
+  lcd.write(client.connected() + 2); //TODO: Make Symbols
   lcd.write((httpsCode == HTTP_CODE_OK) + 4);
 }
 

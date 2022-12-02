@@ -66,11 +66,11 @@ extern byte APIConnected[] = {
 };
 
 extern byte badHTTPReq[]{
-  B10101,
-  B10101,
-  B10101,
+  B01010,
+  B01010,
   B00000,
-  B10101,
+  B01110,
+  B10001,
   B00000,
   B00000,
   B00000

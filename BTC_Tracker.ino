@@ -4,8 +4,9 @@
 #include <ArduinoJson.h>
 #include "Symbols.h"
 
-#define SSID  "xxxxxxxxxxxxxxx"
-#define KEY   "xxxxxxxxxxxxxxx"
+#define SSID  "xxxxxxxxxxxxxxxxxxxx"
+#define KEY   "xxxxxxxxxxxxxxxxxxxx"
+
 #define URL   "/v1/bpi/currentprice/USD.json"
 #define HOST  "api.coindesk.com"
 #define PORT  443
@@ -46,15 +47,16 @@ void setup() {
   //###############
   //## API Setup ##
   //###############
-  client.setInsecure();
   lcd.clear();
   lcd.print("Connecting");
   lcd.setCursor(0, 1);
   lcd.print("Coindesk API");
+  client.setInsecure();
   https.begin(client, HOST, PORT, URL);
 }
 
 void loop() {
+  if (!client.connected()) https.begin(client, HOST, PORT, URL);
   int httpsCode = https.GET();
   JsonObject& root = jsonBuffer.parseObject(https.getString());
   double currentRate = root["bpi"]["USD"]["rate_float"];

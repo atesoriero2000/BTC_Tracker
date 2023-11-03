@@ -13,11 +13,11 @@
 
 WiFiClientSecure client;
 HTTPClient https;
-DynamicJsonBuffer jsonBuffer(517);
+DynamicJsonDocument doc(2048);
 LiquidCrystal lcd(14, 12, 2, 0, 4, 5);
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   //###############
   //## LCD Setup ##
@@ -58,8 +58,8 @@ void setup() {
 void loop() {
   if (!client.connected()) https.begin(client, HOST, PORT, URL);
   int httpsCode = https.GET();
-  JsonObject& root = jsonBuffer.parseObject(https.getString());
-  double currentRate = root["bpi"]["USD"]["rate_float"];
+  deserializeJson(doc, https.getString()); 
+  double currentRate = doc["bpi"]["USD"]["rate_float"].as<double>();
 
   printLCDHeader(httpsCode);
   printLCDRate(currentRate);

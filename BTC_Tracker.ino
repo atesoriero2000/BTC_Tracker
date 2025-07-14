@@ -4,8 +4,14 @@
 #include <ArduinoJson.h>
 #include "Symbols.h"
 
-#define SSID  "xxxxxxxxxxxxxxxxxxxx"
-#define KEY   "xxxxxxxxxxxxxxxxxxxx"
+//#define SSID  "xxxxxxxxxxxxxxxxxxxx"
+//#define KEY   "xxxxxxxxxxxxxxxxxxxx"
+#define SSID "Tesfamily"
+#define KEY "Tes8628125601"
+//#define SSID  "29BrackettBoys"
+//#define KEY   "Frick35Jewett"
+//#define SSID  "WPI Sailbot"
+//#define KEY   "YJKFMP6B8D"
 
 #define URL   "/v1/bpi/currentprice/USD.json"
 #define HOST  "api.coindesk.com"

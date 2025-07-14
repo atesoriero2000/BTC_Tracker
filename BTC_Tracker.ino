@@ -13,8 +13,8 @@
 //#define SSID  "WPI Sailbot"
 //#define KEY   "YJKFMP6B8D"
 
-#define URL   "/v1/bpi/currentprice/USD.json"
-#define HOST  "api.coindesk.com"
+#define URL   "/v2/prices/BTC-USD/spot"
+#define HOST  "api.coinbase.com"
 #define PORT  443
 
 WiFiClientSecure client;
@@ -56,7 +56,7 @@ void setup() {
   lcd.clear();
   lcd.print("Connecting");
   lcd.setCursor(0, 1);
-  lcd.print("Coindesk API");
+  lcd.print("Coinbase API");
   client.setInsecure();
   https.begin(client, HOST, PORT, URL);
 }
@@ -65,7 +65,7 @@ void loop() {
   if (!client.connected()) https.begin(client, HOST, PORT, URL);
   int httpsCode = https.GET();
   deserializeJson(doc, https.getString()); 
-  double currentRate = doc["bpi"]["USD"]["rate_float"].as<double>();
+  double currentRate = doc["data"]["amount"].as<double>();
 
   printLCDHeader(httpsCode);
   printLCDRate(currentRate);

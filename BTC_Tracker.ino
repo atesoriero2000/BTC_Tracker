@@ -6,8 +6,10 @@
 
 //#define SSID  "xxxxxxxxxxxxxxxxxxxx"
 //#define KEY   "xxxxxxxxxxxxxxxxxxxx"
-#define SSID "Tesfamily"
-#define KEY "Tes8628125601"
+#define SSID "36Albion"
+#define KEY "LigmaChops24"
+//#define SSID "Tesfamily"
+//#define KEY "Tes8628125601"
 //#define SSID  "29BrackettBoys"
 //#define KEY   "Frick35Jewett"
 //#define SSID  "WPI Sailbot"

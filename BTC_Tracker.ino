@@ -6,7 +6,7 @@
 
 //#define SSID  "xxxxxxxxxxxxxxxxxxxx"
 //#define KEY   "xxxxxxxxxxxxxxxxxxxx"
-#define SSID "36Albion"
+#define SSID "36Albione"
 #define KEY "LigmaChops24"
 //#define SSID "Tesfamily"
 //#define KEY "Tes8628125601"
@@ -15,14 +15,100 @@
 //#define SSID  "WPI Sailbot"
 //#define KEY   "YJKFMP6B8D"
 
-#define URL   "/v2/prices/BTC-USD/spot"
 #define HOST  "api.coinbase.com"
 #define PORT  443
 
+#define SCREEN_DURATION   5000   // ms to display each asset
+#define REFRESH_INTERVAL  60000  // ms between price refreshes
+
 WiFiClientSecure client;
 HTTPClient https;
-DynamicJsonDocument doc(2048);
+DynamicJsonDocument doc(1024);
 LiquidCrystal lcd(14, 12, 2, 0, 4, 5);
+
+double btcPrice   = 0;
+double goldPrice  = 0;
+double silverPrice = 0;
+int    lastHttpsCode = 0;
+
+unsigned long lastRefreshTime = 0;
+unsigned long lastScreenSwitch = 0;
+int currentScreen = 0; // 0=BTC, 1=Gold, 2=Silver
+
+// Format a dollar amount with comma-thousands and 2 decimal places.
+// Handles up to $999,999.99 (covers BTC, gold, and silver ranges).
+String formatPrice(double price) {
+  long cents   = (long)(price * 100.0 + 0.5);
+  long dollars = cents / 100;
+  int  frac    = (int)(cents % 100);
+
+  String dollarStr;
+  if (dollars >= 1000) {
+    dollarStr = String(dollars / 1000) + "," +
+                String(dollars % 1000 / 100) +
+                String(dollars % 100  / 10)  +
+                String(dollars % 10);
+  } else {
+    dollarStr = String(dollars);
+  }
+
+  String fracStr = (frac < 10 ? "0" : "") + String(frac);
+  return "$" + dollarStr + "." + fracStr;
+}
+
+double fetchPrice(const char* url) {
+  https.begin(client, HOST, PORT, url);
+  int code = https.GET();
+  lastHttpsCode = code;
+  double result = 0;
+  if (code == HTTP_CODE_OK) {
+    deserializeJson(doc, https.getString());
+    // Coinbase returns amount as a JSON string, so use atof for reliable conversion
+    const char* amountStr = doc["data"]["amount"];
+    if (amountStr) result = atof(amountStr);
+  }
+  https.end();
+  return result;
+}
+
+void refreshPrices() {
+  double val;
+  val = fetchPrice("/v2/prices/BTC-USD/spot");
+  if (val) btcPrice    = val;
+  val = fetchPrice("/v2/prices/XAU-USD/spot");
+  if (val) goldPrice   = val;
+  val = fetchPrice("/v2/prices/XAG-USD/spot");
+  if (val) silverPrice = val;
+}
+
+void printLCDHeader(const char* label) {
+  lcd.clear();
+  lcd.print(label);
+  lcd.setCursor(13, 0);
+  lcd.write(WiFi.status() == WL_CONNECTED ? 1 : 0);
+  lcd.write(lastHttpsCode > 0            ? 3 : 2);
+  lcd.write(lastHttpsCode == HTTP_CODE_OK ? 5 : 4);
+}
+
+void displayScreen(int screen) {
+  switch (screen) {
+    case 0:
+      printLCDHeader("BTC-USD:");
+      lcd.setCursor(0, 1);
+      lcd.print(btcPrice    ? formatPrice(btcPrice)               : "--");
+      break;
+    case 1:
+      printLCDHeader("GOLD-USD:");
+      lcd.setCursor(0, 1);
+      lcd.print(goldPrice   ? formatPrice(goldPrice)   + "/oz"    : "--");
+      break;
+    case 2:
+      printLCDHeader("SILVER-USD:");
+      lcd.setCursor(0, 1);
+      lcd.print(silverPrice ? formatPrice(silverPrice) + "/oz"    : "--");
+      break;
+  }
+}
 
 void setup() {
   Serial.begin(115200);
@@ -37,7 +123,7 @@ void setup() {
   lcd.createChar(4, badHTTPReq);
   lcd.createChar(5, goodHTTPReq);
   lcd.begin(16, 2);
-  
+
   //################
   //## WIFI Setup ##
   //################
@@ -60,34 +146,27 @@ void setup() {
   lcd.setCursor(0, 1);
   lcd.print("Coinbase API");
   client.setInsecure();
-  https.begin(client, HOST, PORT, URL);
+
+  refreshPrices();
+  lastRefreshTime  = millis();
+  lastScreenSwitch = millis();
+  displayScreen(currentScreen);
 }
 
 void loop() {
-  if (!client.connected()) https.begin(client, HOST, PORT, URL);
-  int httpsCode = https.GET();
-  deserializeJson(doc, https.getString()); 
-  double currentRate = doc["data"]["amount"].as<double>();
+  unsigned long now = millis();
 
-  printLCDHeader(httpsCode);
-  printLCDRate(currentRate);
-  delay(60000);
-}
+  // Refresh all three prices every REFRESH_INTERVAL ms
+  if (now - lastRefreshTime >= REFRESH_INTERVAL) {
+    refreshPrices();
+    lastRefreshTime = now;
+    displayScreen(currentScreen);
+  }
 
-void printLCDHeader(int httpsCode){
-  lcd.clear();
-  lcd.print("BTC-USD:");
-  lcd.setCursor(13, 0);
-  lcd.write(WiFi.status() == WL_CONNECTED); 
-  lcd.write(client.connected() + 2); //TODO: Make Symbols
-  lcd.write((httpsCode == HTTP_CODE_OK) + 4);
-}
-
-double lastRate = 0;
-void printLCDRate(double rate){
-  if (!rate) rate = lastRate;
-  lcd.setCursor(0,1);
-  String rate_str = String(rate, 4);
-  lcd.print("$" + rate_str.substring(0, rate_str.length()-8) + "," + rate_str.substring(rate_str.length()-8));
-  lastRate = rate;
+  // Rotate to the next screen every SCREEN_DURATION ms
+  if (now - lastScreenSwitch >= SCREEN_DURATION) {
+    currentScreen    = (currentScreen + 1) % 3;
+    lastScreenSwitch = now;
+    displayScreen(currentScreen);
+  }
 }
